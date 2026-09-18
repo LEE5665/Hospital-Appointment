@@ -80,10 +80,12 @@
                             Margin="15,10">
 
                     <Button Content="대시보드"
+                            Command="{Binding ShowDashboardCommand}"
                             Height="50"
                             Margin="0,0,0,8"/>
 
                     <Button Content="환자 관리"
+                            Command="{Binding ShowPatientsCommand}"
                             Height="50"
                             Margin="0,0,0,8"/>
 
@@ -157,7 +159,7 @@
 
 
                     <!-- 현재 화면 이름 -->
-                    <TextBlock Text="대시보드"
+                    <TextBlock Text="{Binding CurrentPageTitle}"
                                VerticalAlignment="Center"
                                FontSize="20"
                                FontWeight="SemiBold"
@@ -180,33 +182,9 @@
             <Grid Grid.Row="1"
                   Margin="30">
 
-                <!--
-                    나중에 여기를
-
-                    <ContentControl
-                        Content="{Binding CurrentViewModel}" />
-
-                    로 변경할 예정
-                -->
-
-                <Border Background="White"
-                        CornerRadius="8"
-                        Padding="30">
-
-                    <StackPanel>
-
-                        <TextBlock Text="대시보드"
-                                   FontSize="28"
-                                   FontWeight="Bold"
-                                   Foreground="#0F172A"/>
-
-                        <TextBlock
-                                   Foreground="#64748B"
-                                   Margin="0,8,0,0"><Run Language="ko-kr" Text="환영합니다."/></TextBlock>
-
-                    </StackPanel>
-
-                </Border>
+                <ContentControl Content="{Binding CurrentViewModel}"
+                                HorizontalContentAlignment="Stretch"
+                                VerticalContentAlignment="Stretch"/>
 
             </Grid>
 

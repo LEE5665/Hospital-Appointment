@@ -19,6 +19,7 @@ namespace Project
         public MainWindow()
         {
             InitializeComponent();
+            DataContext = new ViewModels.MainViewModel();
         }
     }
 }

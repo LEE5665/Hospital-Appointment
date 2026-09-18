@@ -1,0 +1,10 @@
+<UserControl x:Class="Project.Views.DashboardView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Border Background="White" CornerRadius="8" Padding="30">
+        <StackPanel>
+            <TextBlock Text="대시보드" FontSize="28" FontWeight="Bold" Foreground="#0F172A"/>
+            <TextBlock Text="환영합니다." Foreground="#64748B" Margin="0,8,0,0"/>
+        </StackPanel>
+    </Border>
+</UserControl>

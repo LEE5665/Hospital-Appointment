@@ -2,8 +2,17 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:Project"
+             xmlns:vm="clr-namespace:Project.ViewModels"
+             xmlns:views="clr-namespace:Project.Views"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
+        <!-- Content에 들어온 ViewModel 타입과 화면을 연결합니다. -->
+        <DataTemplate DataType="{x:Type vm:DashboardViewModel}">
+            <views:DashboardView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:PatientViewModel}">
+            <views:PatientView/>
+        </DataTemplate>
          
     </Application.Resources>
 </Application>
