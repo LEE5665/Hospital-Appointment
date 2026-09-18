@@ -1,0 +1,217 @@
+﻿<Window x:Class="Project.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+
+        Title="Desk"
+        Width="1200"
+        Height="750"
+        MinWidth="900"
+        MinHeight="600"
+        WindowStartupLocation="CenterScreen">
+
+    <Grid>
+
+        <!--
+            전체 구조
+            Column 0 : 왼쪽 사이드바
+            Column 1 : 오른쪽 콘텐츠
+        -->
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="13.5"/>
+            <ColumnDefinition Width="0"/>
+            <ColumnDefinition Width="0"/>
+            <ColumnDefinition Width="0"/>
+            <ColumnDefinition Width="0"/>
+            <ColumnDefinition Width="0"/>
+            <ColumnDefinition Width="0"/>
+            <ColumnDefinition Width="0"/>
+            <ColumnDefinition Width="0"/>
+            <ColumnDefinition Width="21"/>
+            <ColumnDefinition Width="0"/>
+            <ColumnDefinition Width="0"/>
+            <ColumnDefinition Width="185.5"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+
+        <!-- =========================
+             왼쪽 사이드바
+             ========================= -->
+        <Border Grid.Column="0"
+                Background="#1E293B" Grid.ColumnSpan="13">
+
+            <Grid>
+
+                <Grid.RowDefinitions>
+                    <!-- 로고 -->
+                    <RowDefinition Height="100"/>
+
+                    <!-- 메뉴 -->
+                    <RowDefinition Height="*"/>
+
+                    <!-- 하단 -->
+                    <RowDefinition Height="80"/>
+                </Grid.RowDefinitions>
+
+
+                <!-- 로고 -->
+                <StackPanel Grid.Row="0"
+                            VerticalAlignment="Center"
+                            Margin="25,0">
+
+                    <TextBlock Text="Desk"
+                               Foreground="White"
+                               FontSize="26"
+                               FontWeight="Bold"/>
+
+                    <TextBlock Text="Clinic Management"
+                               Foreground="#94A3B8"
+                               FontSize="12"
+                               Margin="0,5,0,0"/>
+
+                </StackPanel>
+
+
+                <!-- 메뉴 -->
+                <StackPanel Grid.Row="1"
+                            Margin="15,10">
+
+                    <Button Content="대시보드"
+                            Height="50"
+                            Margin="0,0,0,8"/>
+
+                    <Button Content="환자 관리"
+                            Height="50"
+                            Margin="0,0,0,8"/>
+
+                    <Button Content="예약 관리"
+                            Height="50"
+                            Margin="0,0,0,8"/>
+
+                    <Button Content="진료 관리"
+                            Height="50"
+                            Margin="0,0,0,8"/>
+
+                    <Button Content="수납 관리"
+                            Height="50"
+                            Margin="0,0,0,8"/>
+
+                </StackPanel>
+
+
+                <!-- 하단 사용자 영역 -->
+                <Border Grid.Row="2"
+                        BorderBrush="#334155"
+                        BorderThickness="0,1,0,0"
+                        Padding="20">
+
+                    <StackPanel VerticalAlignment="Center">
+
+                        <TextBlock Text="병원 관리 시스템"
+                                   Foreground="#94A3B8"
+                                   FontSize="11"
+                                   Margin="0,3,0,0"/>
+
+                    </StackPanel>
+
+                </Border>
+
+            </Grid>
+
+        </Border>
+
+
+        <!-- =========================
+             오른쪽 영역
+             ========================= -->
+        <Grid Grid.Column="13"
+              Background="#F1F5F9">
+
+            <Grid.RowDefinitions>
+
+                <!-- 상단 Header -->
+                <RowDefinition Height="70"/>
+
+                <!-- 실제 화면 -->
+                <RowDefinition Height="*"/>
+
+            </Grid.RowDefinitions>
+
+
+            <!-- 상단 Header -->
+            <Border Grid.Row="0"
+                    Background="White"
+                    BorderBrush="#E2E8F0"
+                    BorderThickness="0,0,0,1">
+
+                <Grid Margin="30,0">
+
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="27*"/>
+                        <ColumnDefinition Width="7*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+
+                    <!-- 현재 화면 이름 -->
+                    <TextBlock Text="대시보드"
+                               VerticalAlignment="Center"
+                               FontSize="20"
+                               FontWeight="SemiBold"
+                               Foreground="#0F172A" Grid.ColumnSpan="2"/>
+
+
+                    <!-- 오른쪽 사용자 정보 -->
+                    <StackPanel Grid.Column="2"
+                                Orientation="Horizontal"
+                                VerticalAlignment="Center"/>
+
+                </Grid>
+
+            </Border>
+
+
+            <!-- =========================
+                 화면이 들어갈 자리
+                 ========================= -->
+            <Grid Grid.Row="1"
+                  Margin="30">
+
+                <!--
+                    나중에 여기를
+
+                    <ContentControl
+                        Content="{Binding CurrentViewModel}" />
+
+                    로 변경할 예정
+                -->
+
+                <Border Background="White"
+                        CornerRadius="8"
+                        Padding="30">
+
+                    <StackPanel>
+
+                        <TextBlock Text="대시보드"
+                                   FontSize="28"
+                                   FontWeight="Bold"
+                                   Foreground="#0F172A"/>
+
+                        <TextBlock
+                                   Foreground="#64748B"
+                                   Margin="0,8,0,0"><Run Language="ko-kr" Text="환영합니다."/></TextBlock>
+
+                    </StackPanel>
+
+                </Border>
+
+            </Grid>
+
+        </Grid>
+
+    </Grid>
+
+</Window>
