@@ -1,0 +1,17 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: hospital-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: hospital_db
+      POSTGRES_USER: hospital_user
+      POSTGRES_PASSWORD: hospital_password
+      TZ: Asia/Seoul
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

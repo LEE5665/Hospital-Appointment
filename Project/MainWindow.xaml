@@ -1,4 +1,4 @@
-﻿<Window x:Class="Project.MainWindow"
+<Window x:Class="Project.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -166,10 +166,25 @@
                                Foreground="#0F172A" Grid.ColumnSpan="2"/>
 
 
-                    <!-- 오른쪽 사용자 정보 -->
+                    <!-- 오른쪽 사용자 정보 및 로그아웃 -->
                     <StackPanel Grid.Column="2"
                                 Orientation="Horizontal"
-                                VerticalAlignment="Center"/>
+                                VerticalAlignment="Center">
+                        <TextBlock Text="{Binding CurrentUserInfo}"
+                                   Foreground="#334155"
+                                   FontSize="14"
+                                   FontWeight="Medium"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,15,0"/>
+                        <Button Content="로그아웃"
+                                Command="{Binding LogoutCommand}"
+                                Padding="12,6"
+                                Background="#EF4444"
+                                Foreground="White"
+                                BorderThickness="0"
+                                Cursor="Hand"
+                                FontWeight="SemiBold"/>
+                    </StackPanel>
 
                 </Grid>
 

@@ -1,8 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+using System.Threading.Tasks;
+using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Project.Services;
+using Project.Views;
 
 namespace Project.ViewModels
 {
@@ -10,7 +11,7 @@ namespace Project.ViewModels
     {
         private readonly DashboardViewModel dashboardViewModel = new();
         private readonly PatientViewModel patientViewModel = new();
-        // CurrentViewModel 변경 시 화면과 제목을 함께 갱신합니다.
+
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(CurrentPageTitle))]
         private ObservableObject currentViewModel;
@@ -20,11 +21,49 @@ namespace Project.ViewModels
             currentViewModel = dashboardViewModel;
             ShowDashboardCommand = new RelayCommand(() => CurrentViewModel = dashboardViewModel);
             ShowPatientsCommand = new RelayCommand(() => CurrentViewModel = patientViewModel);
+            LogoutCommand = new AsyncRelayCommand(LogoutAsync);
         }
 
         public string CurrentPageTitle => CurrentViewModel is PatientViewModel ? "환자 관리" : "대시보드";
+
+        public string CurrentUserInfo
+        {
+            get
+            {
+                var user = AuthService.Instance.CurrentUser;
+                if (user == null) return string.Empty;
+                return $"{user.Name} ({user.RoleDescription ?? user.Role} · {user.Department})";
+            }
+        }
+
         public IRelayCommand ShowDashboardCommand { get; }
         public IRelayCommand ShowPatientsCommand { get; }
+        public IAsyncRelayCommand LogoutCommand { get; }
 
+        private async Task LogoutAsync()
+        {
+            await AuthService.Instance.LogoutAsync();
+
+            Application.Current.ShutdownMode = ShutdownMode.OnExplicitShutdown;
+
+            var currentMainWindow = Application.Current.MainWindow;
+            var loginWindow = new LoginWindow();
+
+            Application.Current.MainWindow = loginWindow;
+            currentMainWindow?.Close();
+
+            bool? result = loginWindow.ShowDialog();
+            if (result == true)
+            {
+                var newMainWindow = new MainWindow();
+                Application.Current.MainWindow = newMainWindow;
+                Application.Current.ShutdownMode = ShutdownMode.OnMainWindowClose;
+                newMainWindow.Show();
+            }
+            else
+            {
+                Application.Current.Shutdown();
+            }
+        }
     }
 }
