@@ -38,5 +38,23 @@ public class Patient extends BaseTimeEntity {
     private String address;
 
     @Column(columnDefinition = "TEXT")
-    private String memo; // 특이사항 / 알레르기 / 과거력 등
+    private String memo; // 환자 특이사항 (기존 내용 유지)
+
+    @Column(columnDefinition = "TEXT")
+    private String allergies;
+
+    @Column(columnDefinition = "TEXT")
+    private String medicalHistory;
+
+    public void updateDetails(String name, LocalDate birthDate, Gender gender, String phone,
+                              String address, String allergies, String medicalHistory, String memo) {
+        this.name = name;
+        this.birthDate = birthDate;
+        this.gender = gender;
+        this.phone = phone;
+        this.address = address;
+        this.allergies = allergies;
+        this.medicalHistory = medicalHistory;
+        this.memo = memo;
+    }
 }
