@@ -1,10 +1,79 @@
 ﻿<UserControl x:Class="Project.Views.PatientView"
-             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-
+ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Loaded="OnLoaded">
+ <UserControl.Resources>
+  <Style TargetType="Button"><Setter Property="Padding" Value="14,8"/><Setter Property="Margin" Value="4,0,0,0"/><Setter Property="Cursor" Value="Hand"/></Style>
+  <Style TargetType="TextBox"><Setter Property="Padding" Value="8"/><Setter Property="Margin" Value="0,5,0,12"/><Setter Property="BorderBrush" Value="#CBD5E1"/></Style>
+  <Style x:Key="SectionLabel" TargetType="TextBlock"><Setter Property="FontSize" Value="15"/><Setter Property="FontWeight" Value="SemiBold"/><Setter Property="Margin" Value="0,8,0,12"/><Setter Property="Foreground" Value="#0F172A"/></Style>
+ </UserControl.Resources>
+ <DockPanel>
+  <Border DockPanel.Dock="Bottom" Background="#E0E7FF" CornerRadius="6" Padding="12" Margin="0,12,0,0"><TextBlock Text="{Binding Message}" TextWrapping="Wrap"/></Border>
+  <Grid IsEnabled="{Binding IsIdle}">
+   <Grid.ColumnDefinitions><ColumnDefinition Width="*" MinWidth="260"/><ColumnDefinition Width="14"/><ColumnDefinition Width="*" MinWidth="300"/></Grid.ColumnDefinitions>
+   <Border Background="White" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="8" Padding="16">
     <Grid>
-        <TextBlock Text="환자 관리"
-                   FontSize="30"/>
+     <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+     <DockPanel Margin="0,0,0,16"><Button DockPanel.Dock="Right" Content="신규 환자" Command="{Binding NewPatientCommand}"/><TextBlock Text="환자 목록" FontSize="20" FontWeight="Bold" VerticalAlignment="Center"/></DockPanel>
+     <TextBlock Grid.Row="1" Text="이름 · 연락처 · 차트번호로 검색" Foreground="#64748B"/>
+     <DockPanel Grid.Row="2"><Button DockPanel.Dock="Right" Content="검색" Command="{Binding SearchCommand}" Margin="6,5,0,12"/><TextBox Text="{Binding Query, UpdateSourceTrigger=PropertyChanged}"><TextBox.InputBindings><KeyBinding Key="Enter" Command="{Binding SearchCommand}"/></TextBox.InputBindings></TextBox></DockPanel>
+     <DataGrid Grid.Row="3" ItemsSource="{Binding Patients}" SelectedItem="{Binding SelectedPatient}" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False" SelectionMode="Single" SelectionUnit="FullRow" HeadersVisibility="Column" RowHeight="38" GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#F1F5F9" BorderBrush="#E2E8F0" Background="White">
+      <DataGrid.Columns>
+       <DataGridTextColumn Header="이름" Binding="{Binding Name}" Width="90"/>
+       <DataGridTextColumn Header="생년월일" Binding="{Binding BirthDate, StringFormat=yyyy-MM-dd}" Width="100"/>
+       <DataGridTextColumn Header="성별" Binding="{Binding GenderLabel}" Width="55"/>
+       <DataGridTextColumn Header="연락처" Binding="{Binding Phone}" Width="135"/>
+       <DataGridTextColumn Header="차트번호" Binding="{Binding ChartNumber}" Width="180"/>
+      </DataGrid.Columns>
+     </DataGrid>
+     <DockPanel Grid.Row="4" Margin="0,12,0,0"><Button DockPanel.Dock="Right" Content="새로고침" Command="{Binding RefreshCommand}"/><TextBlock Text="최대 100명 · 환자를 선택하면 상세정보가 표시됩니다." TextWrapping="Wrap" Foreground="#64748B" VerticalAlignment="Center"/></DockPanel>
     </Grid>
-
+   </Border>
+   <GridSplitter Grid.Column="1" Width="6" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="Transparent"/>
+   <Border Grid.Column="2" Background="White" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="8" Padding="18">
+    <DockPanel>
+     <StackPanel DockPanel.Dock="Top" Margin="0,0,0,12"><TextBlock Text="{Binding DetailTitle}" FontSize="20" FontWeight="Bold"/><TextBlock Text="{Binding SelectedPatient.ChartNumber, TargetNullValue=저장 시 차트번호가 자동 생성됩니다.}" Foreground="#64748B" Margin="0,6,0,0"/></StackPanel>
+     <Border DockPanel.Dock="Bottom" BorderBrush="#E2E8F0" BorderThickness="0,1,0,0" Padding="0,12,0,0"><Button Content="{Binding SaveLabel}" Click="OnSavePatient" Background="#2563EB" Foreground="White" BorderThickness="0"/></Border>
+     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="0,0,8,0">
+      <StackPanel>
+       <TextBlock Text="기본 인적사항" Style="{StaticResource SectionLabel}"/>
+       <TextBlock Text="이름 *"/><TextBox Text="{Binding PatientName, UpdateSourceTrigger=PropertyChanged}" MaxLength="50"/>
+       <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="12"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+        <StackPanel><TextBlock Text="생년월일 * (YYYY-MM-DD)"/><DatePicker x:Name="BirthDatePicker" SelectedDate="{Binding BirthDate, Mode=TwoWay}" DateValidationError="OnBirthDateValidationError" Margin="0,5,0,12"/></StackPanel>
+        <StackPanel Grid.Column="2"><TextBlock Text="성별"/><ComboBox SelectedIndex="{Binding GenderIndex}" Padding="5" Margin="0,5,0,12"><ComboBoxItem Content="남성"/><ComboBoxItem Content="여성"/></ComboBox></StackPanel>
+       </Grid>
+       <TextBlock Text="연락처 *"/><TextBox Text="{Binding Phone, UpdateSourceTrigger=PropertyChanged}" MaxLength="20"/>
+       <TextBlock Text="주소"/><TextBox Text="{Binding Address, UpdateSourceTrigger=PropertyChanged}" MaxLength="255"/>
+       <TextBlock Text="환자 참고사항" Style="{StaticResource SectionLabel}"/>
+       <TextBlock Text="알레르기"/><TextBox Text="{Binding Allergies, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="65" MaxLength="4000" VerticalScrollBarVisibility="Auto" ToolTip="알레르기 유발 물질과 반응 등을 기록합니다."/>
+       <TextBlock Text="과거력 · 기저질환"/><TextBox Text="{Binding MedicalHistory, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="65" MaxLength="4000" VerticalScrollBarVisibility="Auto"/>
+       <TextBlock Text="특이사항"/><TextBox Text="{Binding Memo, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="65" MaxLength="4000" VerticalScrollBarVisibility="Auto"/>
+       <TextBlock Text="미입력은 '없음'을 의미하지 않습니다. 확인한 내용을 기록해 주세요." Foreground="#64748B" TextWrapping="Wrap" Margin="0,0,0,12"/>
+       <Expander Header="방문 예약 등록" IsEnabled="{Binding HasPatient}" Margin="0,8,0,16">
+        <StackPanel Margin="0,12,0,0">
+         <TextBlock Text="선택한 환자의 방문 일정을 예약합니다. 진료 대기에는 당일 접수 후 등록됩니다." TextWrapping="Wrap" Foreground="#64748B" Margin="0,0,0,12"/>
+         <TextBlock Text="예약 날짜"/><DatePicker SelectedDate="{Binding FutureBookingDate}" Margin="0,5,0,12"/>
+         <TextBlock Text="예약 시간 · 30분 단위"/><ComboBox ItemsSource="{Binding BookingTimes}" SelectedItem="{Binding FutureBookingTime}" Padding="6" Margin="0,5,0,12"/>
+         <TextBlock Text="담당 의사"/><ComboBox ItemsSource="{Binding Doctors}" SelectedItem="{Binding FutureBookingDoctor}" DisplayMemberPath="Label" Padding="6" Margin="0,5,0,12"/>
+         <TextBlock Text="예약 사유"/><TextBox Text="{Binding FutureBookingReason, UpdateSourceTrigger=PropertyChanged}" MaxLength="500"/>
+         <Button Content="선택 환자 예약 등록" Command="{Binding BookAppointmentCommand}"/>
+        </StackPanel>
+       </Expander>
+       <Expander Header="당일 방문 · 바로 접수" IsExpanded="True" IsEnabled="{Binding HasPatient}" Margin="0,8,0,16">
+        <StackPanel Margin="0,12,0,0">
+         <TextBlock Text="{Binding AppointmentMessage}" TextWrapping="Wrap" Foreground="#334155" Margin="0,0,0,8"/>
+         <Button Content="오늘 예약 다시 확인" Command="{Binding ReloadAppointmentsCommand}" Margin="0,0,0,8"/>
+         <ComboBox ItemsSource="{Binding TodayAppointments}" SelectedItem="{Binding SelectedAppointment}" DisplayMemberPath="BookingLabel" IsEnabled="{Binding HasAppointments}" Padding="6" Margin="0,0,0,12" ToolTip="여러 예약이 있으면 접수할 예약을 선택하세요."/>
+         <TextBlock Text="담당 의사"/><ComboBox ItemsSource="{Binding Doctors}" SelectedItem="{Binding SelectedDoctor}" DisplayMemberPath="Label" IsEnabled="{Binding CanEditReception}" Padding="6" Margin="0,5,0,12"/>
+         <TextBlock Text="방문 사유 · 오늘 내원한 이유"/><TextBox Text="{Binding Reason, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding CanEditReception}" MaxLength="500"/>
+         <TextBlock Text="예약 접수는 예약의 의사와 사유를 이어받습니다. 환자 등록만으로 접수되지는 않습니다." Foreground="#64748B" TextWrapping="Wrap" Margin="0,0,0,10"/>
+         <Button Content="{Binding RegisterLabel}" Command="{Binding RegisterCommand}" IsEnabled="{Binding CanRegister}"/>
+         <Button Content="접수한 환자 진료 대기 보기" Command="{Binding OpenRegisteredVisitCommand}" IsEnabled="{Binding CanOpenRegisteredVisit}" Margin="0,8,0,0"/>
+        </StackPanel>
+       </Expander>
+      </StackPanel>
+     </ScrollViewer>
+    </DockPanel>
+   </Border>
+  </Grid>
+ </DockPanel>
 </UserControl>

@@ -18,13 +18,13 @@ namespace Project.ViewModels
 
         public MainViewModel()
         {
-            currentViewModel = dashboardViewModel;
+            currentViewModel = patientViewModel;
             ShowDashboardCommand = new RelayCommand(() => CurrentViewModel = dashboardViewModel);
             ShowPatientsCommand = new RelayCommand(() => CurrentViewModel = patientViewModel);
             LogoutCommand = new AsyncRelayCommand(LogoutAsync);
         }
 
-        public string CurrentPageTitle => CurrentViewModel is PatientViewModel ? "환자 관리" : "대시보드";
+        public string CurrentPageTitle => CurrentViewModel is PatientViewModel ? "환자 관리 · 외래 접수" : "대시보드";
 
         public string CurrentUserInfo
         {

@@ -18,6 +18,7 @@ namespace Project.Services
 
         public MemberResponse? CurrentUser { get; private set; }
         public bool IsAuthenticated => CurrentUser != null;
+        internal HttpClient Client => _httpClient;
 
         private AuthService()
         {
@@ -56,7 +57,7 @@ namespace Project.Services
                         var json = await meResponse.Content.ReadAsStringAsync();
                         CurrentUser = JsonSerializer.Deserialize<MemberResponse>(json);
                     }
-                    return (true, null);
+                    return CurrentUser != null ? (true, null) : (false, "사용자 정보를 가져오지 못했습니다.");
                 }
 
                 // 로그인 실패 메시지 파싱
