@@ -5,6 +5,9 @@
              xmlns:vm="clr-namespace:Project.ViewModels"
              xmlns:views="clr-namespace:Project.Views">
     <Application.Resources>
+        <DataTemplate DataType="{x:Type vm:AppointmentViewModel}">
+            <views:AppointmentView/>
+        </DataTemplate>
         <!-- Content에 들어온 ViewModel 타입과 화면을 연결합니다. -->
         <DataTemplate DataType="{x:Type vm:DashboardViewModel}">
             <views:DashboardView/>
