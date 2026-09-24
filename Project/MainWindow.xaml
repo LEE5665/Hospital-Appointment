@@ -95,7 +95,7 @@
                             Margin="0,0,0,8"/>
 
                     <Button Content="진료 관리"
-                            IsEnabled="False" ToolTip="준비 중"
+                            Command="{Binding ShowEncountersCommand}"
                             Height="50"
                             Margin="0,0,0,8"/>
 

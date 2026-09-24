@@ -8,6 +8,9 @@
         <DataTemplate DataType="{x:Type vm:AppointmentViewModel}">
             <views:AppointmentView/>
         </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:EncounterViewModel}">
+            <views:EncounterView/>
+        </DataTemplate>
         <!-- Content에 들어온 ViewModel 타입과 화면을 연결합니다. -->
         <DataTemplate DataType="{x:Type vm:DashboardViewModel}">
             <views:DashboardView/>

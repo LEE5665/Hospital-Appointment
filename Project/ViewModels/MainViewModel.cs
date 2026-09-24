@@ -11,6 +11,7 @@ namespace Project.ViewModels
     {
         private readonly DashboardViewModel dashboardViewModel = new();
         private readonly PatientViewModel patientViewModel = new();
+        private readonly EncounterViewModel encounterViewModel = new();
         private readonly AppointmentViewModel appointmentViewModel = new();
 
         [ObservableProperty]
@@ -22,11 +23,16 @@ namespace Project.ViewModels
             currentViewModel = patientViewModel;
             ShowDashboardCommand = new RelayCommand(() => CurrentViewModel = dashboardViewModel);
             ShowPatientsCommand = new RelayCommand(() => CurrentViewModel = patientViewModel);
+            ShowEncountersCommand = new RelayCommand(() => CurrentViewModel = encounterViewModel);
             ShowAppointmentsCommand = new RelayCommand(() => CurrentViewModel = appointmentViewModel);
+            patientViewModel.OpenEncounterRequested += async visit => {
+                CurrentViewModel = encounterViewModel;
+                await encounterViewModel.OpenEncounterAsync(visit.Id);
+            };
             LogoutCommand = new AsyncRelayCommand(LogoutAsync);
         }
 
-        public string CurrentPageTitle => CurrentViewModel is AppointmentViewModel ? "예약 관리" : CurrentViewModel is PatientViewModel ? "환자 관리 · 외래 접수" : "대시보드";
+        public string CurrentPageTitle => CurrentViewModel is AppointmentViewModel ? "예약 관리" : CurrentViewModel is EncounterViewModel ? "진료 관리" : CurrentViewModel is PatientViewModel ? "환자 관리 · 외래 접수" : "대시보드";
 
         public string CurrentUserInfo
         {
@@ -40,6 +46,7 @@ namespace Project.ViewModels
 
         public IRelayCommand ShowDashboardCommand { get; }
         public IRelayCommand ShowPatientsCommand { get; }
+        public IRelayCommand ShowEncountersCommand { get; }
         public IRelayCommand ShowAppointmentsCommand { get; }
         public IAsyncRelayCommand LogoutCommand { get; }
 
