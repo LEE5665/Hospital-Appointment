@@ -10,7 +10,6 @@ public partial class PatientViewModel : ObservableObject
     private readonly ClinicService api = new();
     public ObservableCollection<PatientRow> Patients { get; } = new();
     public ObservableCollection<DoctorRow> Doctors { get; } = new();
-    public ObservableCollection<EncounterRow> Encounters { get; } = new();
     public IReadOnlyList<string> BookingTimes { get; } = Enumerable.Range(0, 48).Select(i => $"{i / 2:00}:{i % 2 * 30:00}").ToList();
     [ObservableProperty] private DateTime? futureBookingDate = DateTime.Today.AddDays(1);
     [ObservableProperty] private string futureBookingTime = "09:00";
@@ -119,18 +118,9 @@ public partial class PatientViewModel : ObservableObject
     [ObservableProperty] private string reason = "";
     [ObservableProperty] private PatientRow? selectedPatient;
     [ObservableProperty] private DoctorRow? selectedDoctor;
-    [ObservableProperty] private EncounterRow? selectedEncounter;
-    [ObservableProperty] private string note = "";
-    [ObservableProperty] private DateTime selectedDate = DateTime.Today;
     [ObservableProperty] private string message = "환자를 등록하거나 검색한 후 접수해 주세요.";
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(IsIdle))] private bool isBusy;
     public bool IsIdle => !IsBusy;
-    public bool CanStart => AuthService.Instance.CurrentUser?.Role == "DOCTOR" && SelectedEncounter is { Status: "WAITING" } e && (e.DoctorId == null || e.DoctorId == AuthService.Instance.CurrentUser?.Id);
-    public bool CanWrite => AuthService.Instance.CurrentUser?.Role == "DOCTOR" && SelectedEncounter is { Status: "IN_PROGRESS" } e && e.DoctorId == AuthService.Instance.CurrentUser?.Id;
-    partial void OnSelectedEncounterChanged(EncounterRow? value) {
-        Note = value?.Note ?? "";
-        OnPropertyChanged(nameof(CanStart)); OnPropertyChanged(nameof(CanWrite));
-    }
     private async Task Run(Func<Task> action) {
         if (IsBusy) return;
         IsBusy = true;
@@ -144,18 +134,7 @@ public partial class PatientViewModel : ObservableObject
         Patients.Clear(); foreach (var row in rows) Patients.Add(row);
         SelectedPatient = Patients.FirstOrDefault(p => p.Id == selectedId);
     }
-    private async Task LoadEncounters(long? id = null) {
-        var rows = await api.SendAsync<List<EncounterRow>>(HttpMethod.Get, $"encounters?date={SelectedDate:yyyy-MM-dd}");
-        Encounters.Clear(); foreach (var row in rows) Encounters.Add(row);
-        SelectedEncounter = Encounters.FirstOrDefault(e => e.Id == id);
-    }
-    public Task OpenEncounterAsync(long id) => Run(async () => {
-        SelectedDate = DateTime.Today;
-        await LoadEncounters(id);
-        Message = "접수된 환자를 선택했습니다. 담당 의사는 진료를 시작할 수 있습니다.";
-    });
     [RelayCommand] private Task RefreshAsync() => Run(async () => {
-        var id = SelectedEncounter?.Id;
         var doctors = await api.SendAsync<List<DoctorRow>>(HttpMethod.Get, "doctors");
         var doctorId = SelectedDoctor?.Id;
         Doctors.Clear(); Doctors.Add(new DoctorRow(null, "미지정 · 진료 시작 시 배정", null));
@@ -197,17 +176,5 @@ public partial class PatientViewModel : ObservableObject
         RegisteredVisit = row;
         Message = $"{row.PatientName} 환자가 진료 대기에 등록되었습니다. 담당: {row.DoctorName}";
         await LoadTodayAppointmentsAsync();
-    });
-    [RelayCommand] private Task StartAsync() => Run(async () => {
-        if (!CanStart || SelectedEncounter == null) return;
-        var row = await api.SendAsync<EncounterRow>(HttpMethod.Post, $"encounters/{SelectedEncounter.Id}/start");
-        await LoadEncounters(row.Id); Message = "담당 의사가 확정되었습니다. 진료기록을 작성해 주세요.";
-    });
-    [RelayCommand] private Task SaveNoteAsync() => Save(false);
-    [RelayCommand] private Task CompleteAsync() => Save(true);
-    private Task Save(bool complete) => Run(async () => {
-        if (!CanWrite || SelectedEncounter == null) return;
-        var row = await api.SendAsync<EncounterRow>(HttpMethod.Put, $"encounters/{SelectedEncounter.Id}/note", new { content = Note, complete, version = SelectedEncounter.Version });
-        await LoadEncounters(row.Id); Message = complete ? "진료가 완료되었습니다. 완료된 기록은 조회만 가능합니다." : "진료기록이 저장되었습니다.";
     });
 }

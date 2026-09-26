@@ -6,6 +6,8 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "encounters", indexes = @Index(name = "idx_encounter_registered", columnList = "registeredAt"))
@@ -28,7 +30,17 @@ public class Encounter {
     @Column(length = 500)
     private String reason;
     @Column(columnDefinition = "TEXT")
-    private String note = "";
+    private String subjective = "";
+    @Column(columnDefinition = "TEXT")
+    private String objective = "";
+    @Column(columnDefinition = "TEXT")
+    private String assessment = "";
+    @Column(columnDefinition = "TEXT")
+    private String plan = "";
+    @ElementCollection
+    @CollectionTable(name = "encounter_diagnoses", joinColumns = @JoinColumn(name = "encounter_id"))
+    @OrderColumn(name = "position")
+    private List<EncounterDiagnosis> diagnoses = new ArrayList<>();
     @Version
     private long version;
 
@@ -47,14 +59,27 @@ public class Encounter {
         startedAt = LocalDateTime.now();
     }
 
-    public void saveNote(Member actor, String content, boolean complete) {
+    public void saveSoap(Member actor, String subjective, String objective, String assessment, String plan, boolean complete) {
         if (status != Status.IN_PROGRESS || doctor == null || !doctor.getId().equals(actor.getId()))
             throw new IllegalStateException("담당 의사가 진행 중인 진료만 작성할 수 있습니다.");
-        if (complete && content.isBlank()) throw new IllegalArgumentException("진료기록을 작성한 후 완료해 주세요.");
-        note = content;
+        for (String section : new String[] { subjective, objective, assessment, plan }) {
+            if (section == null || section.length() > 20000)
+                throw new IllegalArgumentException("SOAP 각 항목은 20,000자 이내로 입력해 주세요.");
+        }
+        if (complete && subjective.isBlank() && objective.isBlank() && assessment.isBlank() && plan.isBlank())
+            throw new IllegalArgumentException("SOAP 진료기록을 작성한 후 완료해 주세요.");
+        this.subjective = subjective;
+        this.objective = objective;
+        this.assessment = assessment;
+        this.plan = plan;
         if (complete) {
             status = Status.COMPLETED;
             completedAt = LocalDateTime.now();
         }
+    }
+
+    public void replaceDiagnoses(List<EncounterDiagnosis> values) {
+        diagnoses.clear();
+        diagnoses.addAll(values);
     }
 }

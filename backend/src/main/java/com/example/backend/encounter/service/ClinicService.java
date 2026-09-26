@@ -4,6 +4,8 @@ import com.example.backend.encounter.dto.*;
 import com.example.backend.appointment.entity.Appointment;
 import com.example.backend.appointment.repository.AppointmentRepository;
 import com.example.backend.encounter.entity.Encounter;
+import com.example.backend.encounter.entity.EncounterDiagnosis;
+import com.example.backend.diagnosis.DiagnosisRepository;
 import com.example.backend.encounter.repository.EncounterRepository;
 import com.example.backend.member.entity.*;
 import com.example.backend.member.repository.MemberRepository;
@@ -28,6 +30,7 @@ public class ClinicService {
     private final MemberRepository members;
     private final EncounterRepository encounters;
     private final AppointmentRepository appointments;
+    private final DiagnosisRepository diagnosisCodes;
 
     @Transactional(readOnly = true)
     public List<PatientView> patients(String query) {
@@ -109,12 +112,37 @@ public class ClinicService {
         return EncounterView.from(e);
     }
     @PreAuthorize("hasRole('DOCTOR')")
-    public EncounterView save(Long id, NoteInput input, Authentication auth) {
+    public EncounterView save(Long id, SoapInput input, Authentication auth) {
         Encounter e = locked(id);
         if (e.getVersion() != input.version()) throw new IllegalStateException("기록이 변경되었습니다. 새로고침 후 다시 확인해 주세요.");
-        e.saveNote(actor(auth), input.content(), input.complete());
+        var diagnoses = resolveDiagnoses(input);
+        e.saveSoap(actor(auth), input.subjective(), input.objective(), input.assessment(), input.plan(), input.complete());
+        e.replaceDiagnoses(diagnoses);
         encounters.flush();
         return EncounterView.from(e);
+    }
+    private List<EncounterDiagnosis> resolveDiagnoses(SoapInput input) {
+        if (input.diagnoses() == null || input.diagnoses().size() > 30)
+            throw new IllegalArgumentException("진단은 최대 30개까지 등록할 수 있습니다.");
+        var seen = new HashSet<String>();
+        var result = new ArrayList<EncounterDiagnosis>();
+        int principals = 0;
+        for (var item : input.diagnoses()) {
+            if (item == null || item.code() == null || !seen.add(item.code()))
+                throw new IllegalArgumentException("진단코드가 누락되었거나 중복되었습니다.");
+            var code = diagnosisCodes.findById(item.code())
+                .filter(d -> d.isCompleteCode())
+                .orElseThrow(() -> new IllegalArgumentException("사용할 수 없는 진단코드입니다: " + item.code()));
+            if (item.principal()) {
+                if (!code.isPrincipalDiagnosisAllowed()) throw new IllegalArgumentException("주진단으로 사용할 수 없는 코드입니다: " + item.code());
+                principals++;
+            }
+            result.add(new EncounterDiagnosis(code, item.principal()));
+        }
+        if (principals > 1) throw new IllegalArgumentException("주진단은 하나만 지정할 수 있습니다.");
+        if (input.complete() && !result.isEmpty() && principals != 1)
+            throw new IllegalArgumentException("등록한 진단 중 주진단을 하나 지정해 주세요.");
+        return result;
     }
     private Patient lockedPatient(Long id) {
         return patients.findLockedById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "환자를 찾을 수 없습니다."));

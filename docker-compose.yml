@@ -13,5 +13,16 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  adminer:
+    image: adminer:latest
+    container_name: hospital-adminer
+    restart: unless-stopped
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+    ports:
+      - "127.0.0.1:8888:8080"
+    depends_on:
+      - postgres
+
 volumes:
   postgres_data:

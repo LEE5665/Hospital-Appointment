@@ -1,6 +1,13 @@
 <UserControl x:Class="Project.Views.EncounterView" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Loaded="OnLoaded"> <UserControl.Resources>
   <Style TargetType="Button"><Setter Property="Padding" Value="14,8"/><Setter Property="Margin" Value="3"/></Style>
   <Style TargetType="TextBox"><Setter Property="Padding" Value="8"/><Setter Property="Margin" Value="0,4,0,10"/></Style>
+  <Style x:Key="SoapInput" TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+   <Setter Property="AcceptsReturn" Value="True"/><Setter Property="TextWrapping" Value="Wrap"/>
+   <Setter Property="VerticalScrollBarVisibility" Value="Auto"/><Setter Property="MinHeight" Value="90"/>
+   <Setter Property="MaxHeight" Value="220"/><Setter Property="MaxLength" Value="20000"/>
+   <Setter Property="IsReadOnly" Value="True"/>
+   <Style.Triggers><DataTrigger Binding="{Binding CanWrite}" Value="True"><Setter Property="IsReadOnly" Value="False"/></DataTrigger></Style.Triggers>
+  </Style>
   <Style TargetType="DataGrid"><Setter Property="AutoGenerateColumns" Value="False"/><Setter Property="IsReadOnly" Value="True"/><Setter Property="CanUserAddRows" Value="False"/><Setter Property="SelectionMode" Value="Single"/><Setter Property="HeadersVisibility" Value="Column"/><Setter Property="RowHeight" Value="36"/></Style>
  </UserControl.Resources><DockPanel><Border DockPanel.Dock="Bottom" Background="#E0E7FF" Padding="12" Margin="0,12,0,0"><TextBlock Text="{Binding Message}" TextWrapping="Wrap"/></Border><Grid IsEnabled="{Binding IsIdle}">
      <Grid Margin="16"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="20"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
@@ -11,9 +18,54 @@
        <StackPanel Grid.Row="3" Margin="0,10,0,0"><TextBlock Text="{Binding PageLabel}"/><StackPanel Orientation="Horizontal"><Button Content="이전" Command="{Binding PreviousCommand}" IsEnabled="{Binding CanPrevious}"/><Button Content="다음" Command="{Binding NextCommand}" IsEnabled="{Binding CanNext}"/></StackPanel></StackPanel>
       </Grid>
       <Grid Grid.Column="2"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-       <StackPanel><TextBlock Text="{Binding SelectedEncounter.PatientName, TargetNullValue=환자를 선택하세요}" FontSize="22" FontWeight="Bold"/><TextBlock Text="{Binding SelectedEncounter.ChartNumber}" Foreground="#64748B"/><TextBlock Text="{Binding SelectedEncounter.Reason}" TextWrapping="Wrap" Margin="0,10"/><Button Content="진료 시작 · 담당 확정" Command="{Binding StartCommand}" IsEnabled="{Binding CanStart}"/><TextBlock Text="진료기록" FontWeight="Bold" Margin="0,12,0,4"/></StackPanel>
-       <TextBox Grid.Row="1" Text="{Binding Note, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" MaxLength="20000"><TextBox.Style><Style TargetType="TextBox"><Setter Property="IsReadOnly" Value="True"/><Style.Triggers><DataTrigger Binding="{Binding CanWrite}" Value="True"><Setter Property="IsReadOnly" Value="False"/></DataTrigger></Style.Triggers></Style></TextBox.Style></TextBox>
-       <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" IsEnabled="{Binding CanWrite}"><Button Content="기록 저장" Command="{Binding SaveNoteCommand}"/><Button Content="진료 완료" Command="{Binding CompleteCommand}"/></StackPanel>
+       <StackPanel><TextBlock Text="{Binding SelectedEncounter.PatientName, TargetNullValue=환자를 선택하세요}" FontSize="22" FontWeight="Bold"/><TextBlock Text="{Binding SelectedEncounter.ChartNumber}" Foreground="#64748B"/>
+        <TextBlock Text="접수 시 방문 사유" FontWeight="SemiBold" Margin="0,10,0,4"/><TextBlock Text="{Binding SelectedEncounter.Reason}" TextWrapping="Wrap" Margin="0,0,0,10"/>
+        <Button Content="진료 시작 · 담당 확정" Command="{Binding StartCommand}" IsEnabled="{Binding CanStart}"/>
+        <TextBlock Text="SOAP 진료기록" FontWeight="Bold" Margin="0,12,0,4"/>
+        <TextBlock Text="작성 중에는 일부 항목만 저장할 수 있습니다. 완료한 기록은 조회만 가능합니다." Foreground="#64748B" TextWrapping="Wrap" Margin="0,0,0,8"/>
+       </StackPanel>
+       <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="0,0,8,0">
+        <StackPanel>
+         <DockPanel><Button DockPanel.Dock="Right" Content="방문 사유 가져오기" Command="{Binding ImportReasonCommand}" IsEnabled="{Binding CanWrite}"/><TextBlock Text="S · 환자 호소" FontWeight="SemiBold" VerticalAlignment="Center"/></DockPanel>
+         <TextBlock Text="환자가 말하는 증상, 발생 시점, 경과 등" Foreground="#64748B"/>
+         <TextBox Text="{Binding Subjective, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SoapInput}"/>
+         <TextBlock Text="O · 진찰·검사 소견" FontWeight="SemiBold"/>
+         <TextBlock Text="진찰에서 확인한 사실, 활력징후, 검사 결과 등" Foreground="#64748B"/>
+         <TextBox Text="{Binding Objective, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SoapInput}"/>
+         <TextBlock Text="A · 평가" FontWeight="SemiBold"/>
+         <TextBlock Text="의사의 판단, 의심되는 질환과 진단 근거 등" Foreground="#64748B"/>
+         <TextBox Text="{Binding Assessment, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SoapInput}"/>
+         <TextBlock Text="진단명 · KCD" FontWeight="SemiBold"/>
+         <StackPanel IsEnabled="{Binding CanWrite}">
+          <DockPanel>
+           <Button DockPanel.Dock="Right" Content="검색" Command="{Binding SearchDiagnosesCommand}"/>
+           <TextBox Text="{Binding DiagnosisQuery, UpdateSourceTrigger=PropertyChanged}" MaxLength="100" ToolTip="진단명, 별칭, 코드로 검색">
+            <TextBox.InputBindings><KeyBinding Key="Enter" Command="{Binding SearchDiagnosesCommand}"/></TextBox.InputBindings>
+           </TextBox>
+          </DockPanel>
+          <TextBlock Text="{Binding DiagnosisSearchMessage}" Foreground="#64748B" TextWrapping="Wrap"/>
+          <DockPanel Margin="0,6,0,8">
+           <Button DockPanel.Dock="Right" Content="추가" Command="{Binding AddDiagnosisCommand}"/>
+           <ComboBox ItemsSource="{Binding DiagnosisResults}" SelectedItem="{Binding SelectedDiagnosisResult}" DisplayMemberPath="Label" VerticalAlignment="Center" HorizontalContentAlignment="Stretch" MaxDropDownHeight="260"/>
+          </DockPanel>
+         </StackPanel>
+         <DataGrid ItemsSource="{Binding Diagnoses}" SelectedItem="{Binding SelectedDiagnosis}" MinHeight="85" MaxHeight="200" Margin="0,0,0,4" SelectionUnit="FullRow">
+          <DataGrid.Columns>
+           <DataGridTextColumn Header="구분" Binding="{Binding KindLabel}" Width="65"/>
+           <DataGridTextColumn Header="코드" Binding="{Binding Code}" Width="75"/>
+           <DataGridTextColumn Header="진단명" Binding="{Binding Name}" Width="*"/>
+          </DataGrid.Columns>
+         </DataGrid>
+         <StackPanel Orientation="Horizontal" IsEnabled="{Binding CanWrite}" Margin="0,0,0,12">
+          <Button Content="선택 항목을 주진단으로" Command="{Binding SetPrincipalDiagnosisCommand}"/>
+          <Button Content="선택 항목 삭제" Command="{Binding RemoveDiagnosisCommand}"/>
+         </StackPanel>
+         <TextBlock Text="P · 계획" FontWeight="SemiBold"/>
+         <TextBlock Text="검사, 치료, 처방, 추적 관찰 계획 등" Foreground="#64748B"/>
+         <TextBox Text="{Binding Plan, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SoapInput}"/>
+        </StackPanel>
+       </ScrollViewer>
+       <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" IsEnabled="{Binding CanWrite}"><Button Content="기록 저장" Command="{Binding SaveSoapCommand}"/><Button Content="진료 완료" Command="{Binding CompleteCommand}"/></StackPanel>
       </Grid>
      </Grid>
     </Grid></DockPanel></UserControl>

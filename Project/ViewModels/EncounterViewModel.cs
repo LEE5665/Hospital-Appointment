@@ -16,6 +16,12 @@ public partial class EncounterViewModel : ObservableObject
     private long totalElements;
     private bool settingNote;
     public ObservableCollection<EncounterRow> Encounters { get; } = new();
+    public ObservableCollection<DiagnosisSearchRow> DiagnosisResults { get; } = new();
+    public ObservableCollection<EncounterDiagnosisRow> Diagnoses { get; } = new();
+    [ObservableProperty] private string diagnosisQuery = "";
+    [ObservableProperty] private DiagnosisSearchRow? selectedDiagnosisResult;
+    [ObservableProperty] private EncounterDiagnosisRow? selectedDiagnosis;
+    [ObservableProperty] private string diagnosisSearchMessage = "진단명·별칭 또는 코드로 검색하세요. 최대 50개가 표시됩니다.";
     public bool IsDoctor => AuthService.Instance.CurrentUser?.Role == "DOCTOR";
     [ObservableProperty] private bool mineOnly = AuthService.Instance.CurrentUser?.Role == "DOCTOR";
     [ObservableProperty] private DateTime? selectedDate = DateTime.Today;
@@ -25,7 +31,10 @@ public partial class EncounterViewModel : ObservableObject
     partial void OnSelectedQueueItemChanged(EncounterRow? value) {
         if (value != null) SelectedEncounter = value;
     }
-    [ObservableProperty] private string note = "";
+    [ObservableProperty] private string subjective = "";
+    [ObservableProperty] private string objective = "";
+    [ObservableProperty] private string assessment = "";
+    [ObservableProperty] private string plan = "";
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(IsQueueSelectionEnabled))] private bool hasUnsavedChanges;
     public bool IsQueueSelectionEnabled => !HasUnsavedChanges;
     [ObservableProperty] private string message = "접수 시각이 빠른 순서입니다. 완료 기록은 필터에서 따로 조회하세요.";
@@ -38,13 +47,80 @@ public partial class EncounterViewModel : ObservableObject
     public bool CanWrite => IsDoctor && SelectedEncounter is { Status: "IN_PROGRESS" } e && e.DoctorId == AuthService.Instance.CurrentUser?.Id;
     partial void OnSelectedEncounterChanged(EncounterRow? value) {
         settingNote = true;
-        Note = value?.Note ?? "";
+        Subjective = value?.Subjective ?? "";
+        Objective = value?.Objective ?? "";
+        Assessment = value?.Assessment ?? "";
+        Plan = value?.Plan ?? "";
+        Diagnoses.Clear();
+        foreach (var diagnosis in value?.Diagnoses ?? []) Diagnoses.Add(diagnosis);
+        DiagnosisResults.Clear();
+        SelectedDiagnosisResult = null;
+        SelectedDiagnosis = null;
+        DiagnosisQuery = "";
+        DiagnosisSearchMessage = "진단명·별칭 또는 코드로 검색하세요. 최대 50개가 표시됩니다.";
         settingNote = false;
         HasUnsavedChanges = false;
         OnPropertyChanged(nameof(CanStart)); OnPropertyChanged(nameof(CanWrite));
     }
-    partial void OnNoteChanged(string value) {
-        if (!settingNote) HasUnsavedChanges = value != (SelectedEncounter?.Note ?? "");
+    partial void OnSubjectiveChanged(string value) => UpdateDirtyState();
+    partial void OnObjectiveChanged(string value) => UpdateDirtyState();
+    partial void OnAssessmentChanged(string value) => UpdateDirtyState();
+    partial void OnPlanChanged(string value) => UpdateDirtyState();
+    private void UpdateDirtyState() {
+        if (!settingNote) HasUnsavedChanges = Subjective != (SelectedEncounter?.Subjective ?? "")
+            || Objective != (SelectedEncounter?.Objective ?? "")
+            || Assessment != (SelectedEncounter?.Assessment ?? "")
+            || Plan != (SelectedEncounter?.Plan ?? "")
+            || !Diagnoses.SequenceEqual(SelectedEncounter?.Diagnoses ?? []);
+    }
+    [RelayCommand] private Task SearchDiagnosesAsync() => Run(async () => {
+        if (!CanWrite) return;
+        DiagnosisResults.Clear();
+        SelectedDiagnosisResult = null;
+        if (string.IsNullOrWhiteSpace(DiagnosisQuery)) {
+            DiagnosisSearchMessage = "진단명 또는 코드를 입력해 주세요.";
+            return;
+        }
+        var rows = await api.SendAsync<List<DiagnosisSearchRow>>(HttpMethod.Get,
+            "diagnoses?query=" + Uri.EscapeDataString(DiagnosisQuery.Trim()));
+        foreach (var row in rows) DiagnosisResults.Add(row);
+        SelectedDiagnosisResult = DiagnosisResults.FirstOrDefault();
+        DiagnosisSearchMessage = rows.Count == 0 ? "검색 결과가 없습니다. 검색어와 진단코드 초기화 상태를 확인해 주세요."
+            : rows.Count == 50 ? "최대 50개 표시 · 검색어를 구체적으로 입력하면 결과를 좁힐 수 있습니다." : $"검색 결과 {rows.Count}개";
+    });
+    [RelayCommand] private void AddDiagnosis() {
+        if (!CanWrite || SelectedDiagnosisResult is not { } item) return;
+        if (Diagnoses.Any(d => d.Code == item.Code)) { Message = "이미 추가한 진단입니다."; return; }
+        if (Diagnoses.Count >= 30) { Message = "진단은 최대 30개까지 등록할 수 있습니다."; return; }
+        var diagnosis = new EncounterDiagnosisRow(item.Code, item.Name, item.ClassificationVersion,
+            !Diagnoses.Any(d => d.Principal) && item.PrincipalDiagnosisAllowed, item.PrincipalDiagnosisAllowed);
+        Diagnoses.Add(diagnosis);
+        SelectedDiagnosis = diagnosis;
+        UpdateDirtyState();
+        Message = "진단을 추가했습니다. 기록 저장을 누르면 SOAP과 함께 저장됩니다.";
+    }
+    [RelayCommand] private void RemoveDiagnosis() {
+        if (!CanWrite || SelectedDiagnosis is not { } item) return;
+        Diagnoses.Remove(item);
+        SelectedDiagnosis = null;
+        UpdateDirtyState();
+    }
+    [RelayCommand] private void SetPrincipalDiagnosis() {
+        if (!CanWrite || SelectedDiagnosis is not { } item) return;
+        if (!item.PrincipalDiagnosisAllowed) { Message = "주진단으로 사용할 수 없는 코드입니다."; return; }
+        var code = item.Code;
+        for (int i = 0; i < Diagnoses.Count; i++) Diagnoses[i] = Diagnoses[i] with { Principal = Diagnoses[i].Code == code };
+        SelectedDiagnosis = Diagnoses.First(d => d.Code == code);
+        UpdateDirtyState();
+    }
+    [RelayCommand] private void ImportReason() {
+        if (!CanWrite || string.IsNullOrWhiteSpace(SelectedEncounter?.Reason)) return;
+        if (!string.IsNullOrWhiteSpace(Subjective)) {
+            Message = "S에 작성된 내용이 있습니다. 방문 사유는 위 내용을 참고해 추가해 주세요.";
+            return;
+        }
+        Subjective = SelectedEncounter.Reason;
+        Message = "방문 사유를 S에 가져왔습니다. 문진 내용을 보완해 주세요.";
     }
     private bool CanReload() {
         if (!HasUnsavedChanges) return true;
@@ -98,12 +174,22 @@ public partial class EncounterViewModel : ObservableObject
         if (SelectedEncounter == null) SelectedEncounter = row;
         Message = "진료를 시작했습니다.";
     });
-    [RelayCommand] private Task SaveNoteAsync() => Save(false);
+    [RelayCommand] private Task SaveSoapAsync() => Save(false);
     [RelayCommand] private Task CompleteAsync() => Save(true);
     private Task Save(bool complete) => Run(async () => {
         if (!CanWrite || SelectedEncounter == null) return;
-        var row = await api.SendAsync<EncounterRow>(HttpMethod.Put, $"encounters/{SelectedEncounter.Id}/note",
-            new { content = Note, complete, version = SelectedEncounter.Version });
+        if (complete && new[] { Subjective, Objective, Assessment, Plan }.All(string.IsNullOrWhiteSpace)) {
+            Message = "SOAP 진료기록을 작성한 후 완료해 주세요.";
+            return;
+        }
+        if (complete && Diagnoses.Count > 0 && Diagnoses.Count(d => d.Principal) != 1) {
+            Message = "등록한 진단 중 주진단을 하나 지정해 주세요.";
+            return;
+        }
+        var row = await api.SendAsync<EncounterRow>(HttpMethod.Put, $"encounters/{SelectedEncounter.Id}/soap",
+            new { subjective = Subjective, objective = Objective, assessment = Assessment, plan = Plan,
+                complete, version = SelectedEncounter.Version,
+                diagnoses = Diagnoses.Select(d => new { code = d.Code, principal = d.Principal }).ToArray() });
         var old = Encounters.FirstOrDefault(e => e.Id == row.Id);
         if (old != null) {
             row = row with { QueuePosition = old.QueuePosition };
