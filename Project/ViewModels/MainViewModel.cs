@@ -20,11 +20,31 @@ namespace Project.ViewModels
 
         public MainViewModel()
         {
-            currentViewModel = patientViewModel;
+            currentViewModel = dashboardViewModel;
             ShowDashboardCommand = new RelayCommand(() => CurrentViewModel = dashboardViewModel);
             ShowPatientsCommand = new RelayCommand(() => CurrentViewModel = patientViewModel);
             ShowEncountersCommand = new RelayCommand(() => CurrentViewModel = encounterViewModel);
             ShowAppointmentsCommand = new RelayCommand(() => CurrentViewModel = appointmentViewModel);
+            dashboardViewModel.NavigationRequested += destination =>
+            {
+                if (destination == "patients") CurrentViewModel = patientViewModel;
+                else if (destination == "encounters")
+                {
+                    if (!encounterViewModel.HasUnsavedChanges)
+                    {
+                        encounterViewModel.SelectedDate = System.DateTime.Today;
+                        encounterViewModel.FilterIndex = 0;
+                        encounterViewModel.MineOnly = false;
+                    }
+                    CurrentViewModel = encounterViewModel;
+                }
+                else
+                {
+                    appointmentViewModel.ListDate = System.DateTime.Today;
+                    if (destination == "newBooking") appointmentViewModel.NewBookingCommand.Execute(null);
+                    CurrentViewModel = appointmentViewModel;
+                }
+            };
             patientViewModel.OpenEncounterRequested += async visit => {
                 CurrentViewModel = encounterViewModel;
                 await encounterViewModel.OpenEncounterAsync(visit.Id);
