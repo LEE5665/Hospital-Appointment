@@ -14,6 +14,30 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 class ControllerBindingTests {
+    @Test void bindsPatientHistoryAndPage() throws Exception {
+        var service = mock(ClinicService.class);
+        var mvc = MockMvcBuilders.standaloneSetup(new ClinicController(service)).build();
+        mvc.perform(get("/api/clinic/patients/17/encounters").param("page","2")).andExpect(status().isOk());
+        verify(service).history(17L,2);
+        mvc.perform(get("/api/clinic/patients/17/encounters")).andExpect(status().isOk());
+        verify(service).history(17L,0);
+    }
+    @Test void bindsPrescriptionBodyAndRejectsMissingOrInvalidItems() throws Exception {
+        var service = mock(ClinicService.class);
+        var mvc = MockMvcBuilders.standaloneSetup(new ClinicController(service)).build();
+        mvc.perform(put("/api/clinic/encounters/42/prescriptions").contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {"version":3,"prescriptions":[{"medicationCode":"8800000000001","dose":0.5,"unit":"정","frequency":3,"days":5,"instructions":"식후"}]}
+                """)).andExpect(status().isOk());
+        verify(service).savePrescriptions(eq(42L), argThat(input -> input.version() == 3
+            && input.prescriptions().size() == 1 && input.prescriptions().getFirst().dose().toPlainString().equals("0.5")), isNull());
+        mvc.perform(put("/api/clinic/encounters/42/prescriptions").contentType(MediaType.APPLICATION_JSON)
+            .content("{\"version\":3}")).andExpect(status().isBadRequest());
+        mvc.perform(put("/api/clinic/encounters/42/prescriptions").contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {"version":3,"prescriptions":[{"medicationCode":"8800000000001","dose":0,"unit":"정","frequency":0,"days":0,"instructions":""}]}
+                """)).andExpect(status().isBadRequest());
+    }
     @Test void bindsPatientSearchAndQueueParameters() throws Exception {
         var service = mock(ClinicService.class);
         var mvc = MockMvcBuilders.standaloneSetup(new ClinicController(service)).build();

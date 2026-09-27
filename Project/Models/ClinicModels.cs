@@ -16,13 +16,23 @@ public record DoctorRow(long? Id, string Name, string? Department)
 }
 public record EncounterRow(long Id, long PatientId, string PatientName, string ChartNumber, long? DoctorId,
     string DoctorName, string Status, DateTime RegisteredAt, string? Reason,
-    string Subjective, string Objective, string Assessment, string Plan, long Version, List<EncounterDiagnosisRow> Diagnoses)
+    string Subjective, string Objective, string Assessment, string Plan, long Version, List<EncounterDiagnosisRow> Diagnoses,
+    List<PrescriptionRow> Prescriptions)
 {
     public int QueuePosition { get; init; }
     public string WaitingTime => Status == "WAITING" ? $"{Math.Max(0, (int)(DateTime.Now - RegisteredAt).TotalMinutes)}분" : "—";
     public string StatusLabel => Status switch { "WAITING" => "진료 대기", "IN_PROGRESS" => "진료 중", "COMPLETED" => "진료 완료", _ => "취소" };
 }
 public record EncounterPage(List<EncounterRow> Items, int Page, int Size, long TotalElements, int TotalPages);
+public record MedicationRow(string Code, string Name, string Manufacturer, string Specification, string Category, string ProductCode)
+{
+    public string Label => $"{Name} · {Manufacturer} · {Specification} · {Code}";
+}
+public record PrescriptionRow(string MedicationCode, string Name, string Manufacturer, string Specification,
+    decimal Dose, string Unit, int Frequency, int Days, string Instructions)
+{
+    public string ScheduleLabel => $"1회 {Dose:0.###}{Unit} · 1일 {Frequency}회 · {Days}일";
+}
 public record DiagnosisSearchRow(string Code, string Name, string EnglishName, string ClassificationVersion,
     bool PrincipalDiagnosisAllowed)
 {

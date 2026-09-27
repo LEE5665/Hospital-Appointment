@@ -8,6 +8,7 @@ public partial class EncounterView : UserControl
     public EncounterView() { InitializeComponent(); }
     private async void OnLoaded(object sender, RoutedEventArgs e)
     {
-        if (DataContext is EncounterViewModel vm) await vm.RefreshCommand.ExecuteAsync(null);
+        if (DataContext is EncounterViewModel vm && vm.SelectedEncounter == null && !vm.IsBusy)
+            await vm.RefreshCommand.ExecuteAsync(null);
     }
 }

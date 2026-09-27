@@ -78,6 +78,38 @@ class SoapIntegrationTests {
             .isInstanceOf(IllegalStateException.class);
     }
 
+    @Test void patientHistoryIncludesAllVisitsNewestFirstAcrossDoctorsAndPagesWithoutOtherPatients() {
+        var current = clinic.encounter(id);
+        var patient = patients.findById(current.patientId()).orElseThrow();
+        var otherDoctor = members.save(Member.builder().email(UUID.randomUUID()+"@test.local")
+            .password("unused").name("과거 담당의").role(Role.DOCTOR).active(true).build());
+        var pastIds = new java.util.ArrayList<Long>();
+        for (int i = 1; i <= 27; i++) {
+            var visit = encounters.saveAndFlush(new Encounter(patient, otherDoctor, "이전 방문 " + i));
+            pastIds.add(visit.getId());
+            jdbc.update("update encounters set registered_at=?,status=?,subjective=? where id=?",
+                LocalDate.now().minusDays(i).atStartOfDay(),i == 1 ? "CANCELLED" : "COMPLETED","과거 기록 " + i,visit.getId());
+        }
+        var otherPatient = patients.save(Patient.builder().chartNumber(UUID.randomUUID().toString().substring(0,20))
+            .name("다른 환자").birthDate(LocalDate.of(1990,1,1)).gender(Gender.FEMALE).phone("01000000000").build());
+        var otherVisit = encounters.saveAndFlush(new Encounter(otherPatient,otherDoctor,"다른 환자 기록"));
+        var first = clinic.history(patient.getId(),0);
+        assertThat(first.totalElements()).isEqualTo(28);
+        assertThat(first.totalPages()).isEqualTo(2);
+        assertThat(first.items()).hasSize(25);
+        assertThat(first.items().getFirst().id()).isEqualTo(id);
+        assertThat(first.items().get(1).status()).isEqualTo(Encounter.Status.CANCELLED);
+        assertThat(first.items().get(1).doctorName()).isEqualTo("과거 담당의");
+        assertThat(first.items()).extracting(com.example.backend.encounter.dto.EncounterHistoryPage.Visit::id)
+            .doesNotContain(otherVisit.getId());
+        assertThat(clinic.history(patient.getId(),1).items()).extracting(com.example.backend.encounter.dto.EncounterHistoryPage.Visit::id)
+            .containsExactlyElementsOf(pastIds.subList(24,27));
+        assertThat(clinic.encounter(pastIds.getFirst()).subjective()).isEqualTo("과거 기록 1");
+        assertThat(clinic.encounter(id).subjective()).isEmpty();
+        assertThatThrownBy(() -> clinic.history(patient.getId(),-1)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> clinic.history(Long.MAX_VALUE,0)).isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
+    }
+
     @Test void rejectsWritingBeforeStartAndCompletionWithOnlyWhitespace() {
         assertThatThrownBy(() -> clinic.save(id, new SoapInput("내용", "", "", "", false, 0), actor))
             .isInstanceOf(IllegalStateException.class);

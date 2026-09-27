@@ -41,6 +41,10 @@ public class Encounter {
     @CollectionTable(name = "encounter_diagnoses", joinColumns = @JoinColumn(name = "encounter_id"))
     @OrderColumn(name = "position")
     private List<EncounterDiagnosis> diagnoses = new ArrayList<>();
+    @ElementCollection
+    @CollectionTable(name = "encounter_prescriptions", joinColumns = @JoinColumn(name = "encounter_id"))
+    @OrderColumn(name = "position")
+    private List<EncounterPrescription> prescriptions = new ArrayList<>();
     @Version
     private long version;
 
@@ -81,5 +85,12 @@ public class Encounter {
     public void replaceDiagnoses(List<EncounterDiagnosis> values) {
         diagnoses.clear();
         diagnoses.addAll(values);
+    }
+
+    public void replacePrescriptions(Member actor, List<EncounterPrescription> values) {
+        if (status != Status.IN_PROGRESS || doctor == null || !doctor.getId().equals(actor.getId()))
+            throw new IllegalStateException("담당 의사가 진행 중인 진료만 처방할 수 있습니다.");
+        prescriptions.clear();
+        prescriptions.addAll(values);
     }
 }

@@ -5,6 +5,12 @@
              xmlns:vm="clr-namespace:Project.ViewModels"
              xmlns:views="clr-namespace:Project.Views">
     <Application.Resources>
+        <DataTemplate DataType="{x:Type vm:PatientHistoryViewModel}">
+            <views:PatientHistoryView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:ClinicalOrdersViewModel}">
+            <views:ClinicalOrdersView/>
+        </DataTemplate>
         <DataTemplate DataType="{x:Type vm:AppointmentViewModel}">
             <views:AppointmentView/>
         </DataTemplate>

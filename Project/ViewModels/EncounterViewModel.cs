@@ -15,6 +15,14 @@ public partial class EncounterViewModel : ObservableObject
     private int totalPages;
     private long totalElements;
     private bool settingNote;
+    public ClinicalOrdersViewModel Orders { get; } = new(true);
+    public PatientHistoryViewModel History { get; } = new();
+    public EncounterViewModel() {
+        Orders.PropertyChanged += (_, e) => {
+            if (e.PropertyName is nameof(ClinicalOrdersViewModel.HasDraft) or nameof(ClinicalOrdersViewModel.IsBusy))
+                OnPropertyChanged(nameof(IsQueueSelectionEnabled));
+        };
+    }
     public ObservableCollection<EncounterRow> Encounters { get; } = new();
     public ObservableCollection<DiagnosisSearchRow> DiagnosisResults { get; } = new();
     public ObservableCollection<EncounterDiagnosisRow> Diagnoses { get; } = new();
@@ -36,7 +44,7 @@ public partial class EncounterViewModel : ObservableObject
     [ObservableProperty] private string assessment = "";
     [ObservableProperty] private string plan = "";
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(IsQueueSelectionEnabled))] private bool hasUnsavedChanges;
-    public bool IsQueueSelectionEnabled => !HasUnsavedChanges;
+    public bool IsQueueSelectionEnabled => !HasUnsavedChanges && !HasUnsavedPrescriptions && !Orders.HasDraft && !Orders.IsBusy;
     [ObservableProperty] private string message = "접수 시각이 빠른 순서입니다. 완료 기록은 필터에서 따로 조회하세요.";
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(IsIdle))] private bool isBusy;
     public bool IsIdle => !IsBusy;
@@ -46,6 +54,9 @@ public partial class EncounterViewModel : ObservableObject
     public bool CanStart => IsDoctor && SelectedEncounter is { Status: "WAITING" } e && (e.DoctorId == null || e.DoctorId == AuthService.Instance.CurrentUser?.Id);
     public bool CanWrite => IsDoctor && SelectedEncounter is { Status: "IN_PROGRESS" } e && e.DoctorId == AuthService.Instance.CurrentUser?.Id;
     partial void OnSelectedEncounterChanged(EncounterRow? value) {
+        History.SetPatient(value);
+        Orders.SetEncounter(value);
+        if (savingPrescriptions) { OnPropertyChanged(nameof(CanWrite)); return; }
         settingNote = true;
         Subjective = value?.Subjective ?? "";
         Objective = value?.Objective ?? "";
@@ -60,6 +71,7 @@ public partial class EncounterViewModel : ObservableObject
         DiagnosisSearchMessage = "진단명·별칭 또는 코드로 검색하세요. 최대 50개가 표시됩니다.";
         settingNote = false;
         HasUnsavedChanges = false;
+        LoadPrescriptions(value);
         OnPropertyChanged(nameof(CanStart)); OnPropertyChanged(nameof(CanWrite));
     }
     partial void OnSubjectiveChanged(string value) => UpdateDirtyState();
@@ -123,8 +135,8 @@ public partial class EncounterViewModel : ObservableObject
         Message = "방문 사유를 S에 가져왔습니다. 문진 내용을 보완해 주세요.";
     }
     private bool CanReload() {
-        if (!HasUnsavedChanges) return true;
-        Message = "작성 중인 진료기록을 먼저 저장해 주세요.";
+        if (IsQueueSelectionEnabled) return true;
+        Message = "작성 중인 진료기록·처방·검사·처치 내용을 먼저 저장하고 조회가 끝날 때까지 기다려 주세요.";
         return false;
     }
     private async Task Run(Func<Task> action) {
@@ -178,6 +190,8 @@ public partial class EncounterViewModel : ObservableObject
     [RelayCommand] private Task CompleteAsync() => Save(true);
     private Task Save(bool complete) => Run(async () => {
         if (!CanWrite || SelectedEncounter == null) return;
+        if (Orders.HasDraft || Orders.IsBusy) { Message = "검사·처치 입력을 먼저 처리하고 조회가 끝난 뒤 저장해 주세요."; return; }
+        if (HasUnsavedPrescriptions) { Message = "처방 저장을 먼저 눌러 주세요. 작성한 SOAP 내용은 유지됩니다."; return; }
         if (complete && new[] { Subjective, Objective, Assessment, Plan }.All(string.IsNullOrWhiteSpace)) {
             Message = "SOAP 진료기록을 작성한 후 완료해 주세요.";
             return;

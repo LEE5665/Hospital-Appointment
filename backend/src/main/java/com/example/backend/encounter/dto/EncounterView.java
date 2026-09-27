@@ -6,7 +6,10 @@ import java.util.List;
 
 public record EncounterView(Long id, Long patientId, String patientName, String chartNumber, Long doctorId,
     String doctorName, Encounter.Status status, LocalDateTime registeredAt, String reason,
-    String subjective, String objective, String assessment, String plan, long version, List<DiagnosisView> diagnoses) {
+    String subjective, String objective, String assessment, String plan, long version, List<DiagnosisView> diagnoses,
+    List<PrescriptionView> prescriptions) {
+    public record PrescriptionView(String medicationCode, String name, String manufacturer, String specification,
+        java.math.BigDecimal dose, String unit, int frequency, int days, String instructions) {}
     public record DiagnosisView(String code, String name, String classificationVersion, boolean principal,
                                 boolean principalDiagnosisAllowed) {}
     public static EncounterView from(Encounter e) {
@@ -15,7 +18,10 @@ public record EncounterView(Long id, Long patientId, String patientName, String 
             e.getStatus(), e.getRegisteredAt(), e.getReason(), text(e.getSubjective()), text(e.getObjective()),
             text(e.getAssessment()), text(e.getPlan()), e.getVersion(), e.getDiagnoses().stream()
                 .map(d -> new DiagnosisView(d.getDiagnosis().getCode(), d.getName(), d.getClassificationVersion(),
-                    d.isPrincipal(), d.isPrincipalDiagnosisAllowed())).toList());
+                    d.isPrincipal(), d.isPrincipalDiagnosisAllowed())).toList(),
+            e.getPrescriptions().stream().map(p -> new PrescriptionView(p.getMedication().getCode(), p.getName(),
+                p.getManufacturer(), p.getSpecification(), p.getDose(), p.getUnit(), p.getFrequency(),
+                p.getDays(), p.getInstructions())).toList());
     }
     private static String text(String value) { return value == null ? "" : value; }
 }

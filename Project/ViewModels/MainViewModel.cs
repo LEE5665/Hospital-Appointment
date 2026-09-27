@@ -13,6 +13,7 @@ namespace Project.ViewModels
         private readonly PatientViewModel patientViewModel = new();
         private readonly EncounterViewModel encounterViewModel = new();
         private readonly AppointmentViewModel appointmentViewModel = new();
+        private readonly ClinicalOrdersViewModel ordersViewModel = new();
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(CurrentPageTitle))]
@@ -25,12 +26,18 @@ namespace Project.ViewModels
             ShowPatientsCommand = new RelayCommand(() => CurrentViewModel = patientViewModel);
             ShowEncountersCommand = new RelayCommand(() => CurrentViewModel = encounterViewModel);
             ShowAppointmentsCommand = new RelayCommand(() => CurrentViewModel = appointmentViewModel);
+            ShowOrdersCommand = new RelayCommand(() => CurrentViewModel = ordersViewModel);
+            ordersViewModel.OpenEncounterRequested += async id => {
+                await encounterViewModel.OpenEncounterAsync(id);
+                CurrentViewModel = encounterViewModel;
+            };
+            encounterViewModel.Orders.OpenEncounterRequested += async id => await encounterViewModel.OpenEncounterAsync(id);
             dashboardViewModel.NavigationRequested += destination =>
             {
                 if (destination == "patients") CurrentViewModel = patientViewModel;
                 else if (destination == "encounters")
                 {
-                    if (!encounterViewModel.HasUnsavedChanges)
+                    if (encounterViewModel.IsQueueSelectionEnabled)
                     {
                         encounterViewModel.SelectedDate = System.DateTime.Today;
                         encounterViewModel.FilterIndex = 0;
@@ -46,13 +53,13 @@ namespace Project.ViewModels
                 }
             };
             patientViewModel.OpenEncounterRequested += async visit => {
-                CurrentViewModel = encounterViewModel;
                 await encounterViewModel.OpenEncounterAsync(visit.Id);
+                CurrentViewModel = encounterViewModel;
             };
             LogoutCommand = new AsyncRelayCommand(LogoutAsync);
         }
 
-        public string CurrentPageTitle => CurrentViewModel is AppointmentViewModel ? "예약 관리" : CurrentViewModel is EncounterViewModel ? "진료 관리" : CurrentViewModel is PatientViewModel ? "환자 관리 · 외래 접수" : "대시보드";
+        public string CurrentPageTitle => CurrentViewModel is ClinicalOrdersViewModel ? "검사 · 처치" : CurrentViewModel is AppointmentViewModel ? "예약 관리" : CurrentViewModel is EncounterViewModel ? "진료 관리" : CurrentViewModel is PatientViewModel ? "환자 관리 · 외래 접수" : "대시보드";
 
         public string CurrentUserInfo
         {
@@ -68,6 +75,7 @@ namespace Project.ViewModels
         public IRelayCommand ShowPatientsCommand { get; }
         public IRelayCommand ShowEncountersCommand { get; }
         public IRelayCommand ShowAppointmentsCommand { get; }
+        public IRelayCommand ShowOrdersCommand { get; }
         public IAsyncRelayCommand LogoutCommand { get; }
 
         private async Task LogoutAsync()

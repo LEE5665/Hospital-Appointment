@@ -31,6 +31,34 @@ public class ClinicService {
     private final EncounterRepository encounters;
     private final AppointmentRepository appointments;
     private final DiagnosisRepository diagnosisCodes;
+    private final com.example.backend.medication.MedicationRepository medications;
+    private final jakarta.validation.Validator validator;
+
+    @Transactional(readOnly = true)
+    public EncounterHistoryPage history(Long patientId, int page) {
+        if (page < 0 || page > 100000) throw new IllegalArgumentException("페이지 번호가 올바르지 않습니다.");
+        if (!patients.existsById(patientId)) throw new ResponseStatusException(HttpStatus.NOT_FOUND,"환자를 찾을 수 없습니다.");
+        var result = encounters.findByPatientIdOrderByRegisteredAtDescIdDesc(patientId,
+            org.springframework.data.domain.PageRequest.of(page,25));
+        return new EncounterHistoryPage(result.map(EncounterHistoryPage.Visit::from).getContent(),page,
+            result.getTotalPages(),result.getTotalElements());
+    }
+
+    @PreAuthorize("hasRole('DOCTOR')")
+    public EncounterView savePrescriptions(Long id, PrescriptionInput input, Authentication auth) {
+        if (!validator.validate(input).isEmpty()) throw new IllegalArgumentException("약품과 투여량·단위·횟수·일수·용법을 확인하세요.");
+        Encounter e = locked(id);
+        if (e.getVersion() != input.version()) throw new IllegalStateException("기록이 변경되었습니다. 새로고침 후 다시 확인하세요.");
+        var values = new ArrayList<com.example.backend.encounter.entity.EncounterPrescription>();
+        for (var item : input.prescriptions()) {
+            var medication = medications.findById(item.medicationCode())
+                .orElseThrow(() -> new IllegalArgumentException("등록되지 않은 약품입니다: " + item.medicationCode()));
+            values.add(new com.example.backend.encounter.entity.EncounterPrescription(medication, item));
+        }
+        e.replacePrescriptions(actor(auth), values);
+        encounters.flush();
+        return EncounterView.from(e);
+    }
 
     @Transactional(readOnly = true)
     public List<PatientView> patients(String query) {

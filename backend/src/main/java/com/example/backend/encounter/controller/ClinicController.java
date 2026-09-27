@@ -21,6 +21,12 @@ public class ClinicController {
         return clinicService.patients(query);
     }
 
+    @GetMapping("/patients/{id}/encounters")
+    public EncounterHistoryPage history(@PathVariable("id") Long id,
+        @RequestParam(name = "page", defaultValue = "0") int page) {
+        return clinicService.history(id,page);
+    }
+
     @PostMapping("/patients")
     @ResponseStatus(HttpStatus.CREATED)
     public PatientView create(@Valid @RequestBody PatientInput input) {
@@ -64,5 +70,10 @@ public class ClinicController {
     @PutMapping("/encounters/{id}/soap")
     public EncounterView save(@PathVariable("id") Long id, @Valid @RequestBody SoapInput input, Authentication auth) {
         return clinicService.save(id, input, auth);
+    }
+
+    @PutMapping("/encounters/{id}/prescriptions")
+    public EncounterView prescriptions(@PathVariable("id") Long id, @Valid @RequestBody PrescriptionInput input, Authentication auth) {
+        return clinicService.savePrescriptions(id, input, auth);
     }
 }

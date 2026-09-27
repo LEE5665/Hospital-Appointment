@@ -26,6 +26,12 @@
        </StackPanel>
        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="0,0,8,0">
         <StackPanel>
+         <Expander Header="이 환자의 전체 진료 기록" Margin="0,0,0,12">
+          <ContentControl Content="{Binding History}" HorizontalContentAlignment="Stretch"/>
+         </Expander>
+         <Expander Header="검사 · 처치 요청 및 결과" Margin="0,0,0,12">
+          <ContentControl Content="{Binding Orders}" HorizontalContentAlignment="Stretch"/>
+         </Expander>
          <DockPanel><Button DockPanel.Dock="Right" Content="방문 사유 가져오기" Command="{Binding ImportReasonCommand}" IsEnabled="{Binding CanWrite}"/><TextBlock Text="S · 환자 호소" FontWeight="SemiBold" VerticalAlignment="Center"/></DockPanel>
          <TextBlock Text="환자가 말하는 증상, 발생 시점, 경과 등" Foreground="#64748B"/>
          <TextBox Text="{Binding Subjective, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SoapInput}"/>
@@ -63,6 +69,35 @@
          <TextBlock Text="P · 계획" FontWeight="SemiBold"/>
          <TextBlock Text="검사, 치료, 처방, 추적 관찰 계획 등" Foreground="#64748B"/>
          <TextBox Text="{Binding Plan, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource SoapInput}"/>
+         <TextBlock Text="약 처방" FontWeight="Bold" Margin="0,12,0,4"/>
+         <TextBlock Text="약품을 선택하고 투여 방법을 입력하세요. 처방은 별도로 저장합니다." TextWrapping="Wrap" Foreground="#64748B"/>
+         <StackPanel IsEnabled="{Binding CanWrite}">
+          <DockPanel><Button DockPanel.Dock="Right" Content="약품 검색" Command="{Binding SearchMedicationsCommand}"/>
+           <TextBox Text="{Binding MedicationQuery, UpdateSourceTrigger=PropertyChanged}" MaxLength="100">
+            <TextBox.InputBindings><KeyBinding Key="Enter" Command="{Binding SearchMedicationsCommand}"/></TextBox.InputBindings>
+           </TextBox>
+          </DockPanel>
+          <TextBlock Text="{Binding MedicationMessage}" TextWrapping="Wrap" Foreground="#64748B"/>
+          <ComboBox ItemsSource="{Binding MedicationResults}" SelectedItem="{Binding SelectedMedication}" DisplayMemberPath="Label" Margin="0,8" MaxDropDownHeight="250"/>
+          <TextBlock Text="{Binding SelectedMedication.Label}" TextWrapping="Wrap"/>
+          <UniformGrid Columns="2">
+           <StackPanel Margin="0,0,8,0"><TextBlock Text="1회 투여량"/><TextBox Text="{Binding PrescriptionDose, UpdateSourceTrigger=PropertyChanged}" MaxLength="9"/></StackPanel>
+           <StackPanel><TextBlock Text="투여 단위 (정, 캡슐, mL 등)"/><TextBox Text="{Binding PrescriptionUnit, UpdateSourceTrigger=PropertyChanged}" MaxLength="20"/></StackPanel>
+           <StackPanel Margin="0,0,8,0"><TextBlock Text="1일 투여 횟수"/><TextBox Text="{Binding PrescriptionFrequency, UpdateSourceTrigger=PropertyChanged}" MaxLength="2"/></StackPanel>
+           <StackPanel><TextBlock Text="투여 일수"/><TextBox Text="{Binding PrescriptionDays, UpdateSourceTrigger=PropertyChanged}" MaxLength="3"/></StackPanel>
+          </UniformGrid>
+          <TextBlock Text="용법 · 투여경로 및 복용 시점"/><TextBox Text="{Binding PrescriptionInstructions, UpdateSourceTrigger=PropertyChanged}" MaxLength="200"/>
+          <WrapPanel><Button Content="목록에 추가 / 수정 반영" Command="{Binding AddPrescriptionCommand}"/><Button Content="새 처방 / 입력 초기화" Command="{Binding NewPrescriptionCommand}"/></WrapPanel>
+         </StackPanel>
+         <DataGrid ItemsSource="{Binding Prescriptions}" SelectedItem="{Binding SelectedPrescription}" IsEnabled="{Binding CanSelectPrescription}" MinHeight="90" MaxHeight="240" Margin="0,8">
+          <DataGrid.Columns>
+           <DataGridTextColumn Header="약품명" Binding="{Binding Name}" Width="180"/>
+           <DataGridTextColumn Header="제조사" Binding="{Binding Manufacturer}" Width="110"/>
+           <DataGridTextColumn Header="투여 방법" Binding="{Binding ScheduleLabel}" Width="180"/>
+           <DataGridTextColumn Header="용법" Binding="{Binding Instructions}" Width="180"/>
+          </DataGrid.Columns>
+         </DataGrid>
+         <WrapPanel IsEnabled="{Binding CanWrite}"><Button Content="선택 처방 삭제" Command="{Binding RemovePrescriptionCommand}"/><Button Content="처방 저장" Command="{Binding SavePrescriptionsCommand}"/></WrapPanel>
         </StackPanel>
        </ScrollViewer>
        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" IsEnabled="{Binding CanWrite}"><Button Content="기록 저장" Command="{Binding SaveSoapCommand}"/><Button Content="진료 완료" Command="{Binding CompleteCommand}"/></StackPanel>
