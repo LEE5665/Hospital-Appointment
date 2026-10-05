@@ -9,6 +9,9 @@ import java.util.*;
 
 public interface EncounterRepository extends JpaRepository<Encounter, Long> {
     @EntityGraph(attributePaths = {"patient", "doctor"})
+    List<Encounter> findByStatusAndCompletedAtGreaterThanEqualAndCompletedAtLessThanOrderByCompletedAtAscIdAsc(
+        Encounter.Status status, LocalDateTime from, LocalDateTime to);
+    @EntityGraph(attributePaths = {"patient", "doctor"})
     org.springframework.data.domain.Page<Encounter> findByPatientIdOrderByRegisteredAtDescIdDesc(
         Long patientId, org.springframework.data.domain.Pageable pageable);
     @EntityGraph(attributePaths = {"patient", "doctor"})

@@ -14,6 +14,8 @@ namespace Project.ViewModels
         private readonly EncounterViewModel encounterViewModel = new();
         private readonly AppointmentViewModel appointmentViewModel = new();
         private readonly ClinicalOrdersViewModel ordersViewModel = new();
+        private readonly BillingViewModel billingViewModel = new();
+        public bool CanAccessBilling => billingViewModel.HasPermission;
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(CurrentPageTitle))]
@@ -27,6 +29,7 @@ namespace Project.ViewModels
             ShowEncountersCommand = new RelayCommand(() => CurrentViewModel = encounterViewModel);
             ShowAppointmentsCommand = new RelayCommand(() => CurrentViewModel = appointmentViewModel);
             ShowOrdersCommand = new RelayCommand(() => CurrentViewModel = ordersViewModel);
+            ShowBillingCommand = new RelayCommand(() => CurrentViewModel = billingViewModel, () => CanAccessBilling);
             ordersViewModel.OpenEncounterRequested += async id => {
                 await encounterViewModel.OpenEncounterAsync(id);
                 CurrentViewModel = encounterViewModel;
@@ -59,7 +62,7 @@ namespace Project.ViewModels
             LogoutCommand = new AsyncRelayCommand(LogoutAsync);
         }
 
-        public string CurrentPageTitle => CurrentViewModel is ClinicalOrdersViewModel ? "검사 · 처치" : CurrentViewModel is AppointmentViewModel ? "예약 관리" : CurrentViewModel is EncounterViewModel ? "진료 관리" : CurrentViewModel is PatientViewModel ? "환자 관리 · 외래 접수" : "대시보드";
+        public string CurrentPageTitle => CurrentViewModel is BillingViewModel ? "수납 관리" : CurrentViewModel is ClinicalOrdersViewModel ? "검사 · 처치" : CurrentViewModel is AppointmentViewModel ? "예약 관리" : CurrentViewModel is EncounterViewModel ? "진료 관리" : CurrentViewModel is PatientViewModel ? "환자 관리 · 외래 접수" : "대시보드";
 
         public string CurrentUserInfo
         {
@@ -76,6 +79,7 @@ namespace Project.ViewModels
         public IRelayCommand ShowEncountersCommand { get; }
         public IRelayCommand ShowAppointmentsCommand { get; }
         public IRelayCommand ShowOrdersCommand { get; }
+        public IRelayCommand ShowBillingCommand { get; }
         public IAsyncRelayCommand LogoutCommand { get; }
 
         private async Task LogoutAsync()
